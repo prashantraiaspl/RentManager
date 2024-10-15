@@ -20,7 +20,8 @@ namespace RentManagerPOC.Functions
         };
 
         [FunctionName("ReportSender")]
-        public async Task Run([TimerTrigger("0 0 5,11,13,15,17 * * *")] TimerInfo myTimer, ILogger _logger)
+        //public async Task Run([TimerTrigger("0 0 5,11,13,15,17 * * *")] TimerInfo myTimer, ILogger _logger)
+        public async Task Run([TimerTrigger("0 0 */1 * * *")] TimerInfo myTimer, ILogger _logger)
         {
             _logger.LogInformation($"ReportSender function triggered at: {DateTime.Now}");
 
