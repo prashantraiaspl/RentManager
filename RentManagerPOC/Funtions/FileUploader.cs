@@ -19,8 +19,10 @@ namespace RentManagerPOC.Funtions
         private static readonly string BaseUrl = "https://goosepm.api.rentmanager.com";
 
         // Azure Blob Storage connection string and container name
-        private static readonly string connectionString = "DefaultEndpointsProtocol=https;AccountName=aspl1710;AccountKey=VjyEEoO4A+ADkyo4F1S6D6BFL++jxubiK9rbcuSJBt2p46bfjC4j4i5y4cMgB2cswM9TGHWr1Zit+AStKEBrRA==;EndpointSuffix=core.windows.net";
-        private static readonly string containerName = "aspl1710";
+        //private static readonly string connectionString = "DefaultEndpointsProtocol=https;AccountName=aspl1710;AccountKey=VjyEEoO4A+ADkyo4F1S6D6BFL++jxubiK9rbcuSJBt2p46bfjC4j4i5y4cMgB2cswM9TGHWr1Zit+AStKEBrRA==;EndpointSuffix=core.windows.net";
+        private static readonly string connectionString = "DefaultEndpointsProtocol=https;AccountName=storageboxx;AccountKey=MWzA576uY6wgCbISNib+ppVWXA9ur5KJTWUJ2q8qHINdb6B2gbwgj0BmxGI+DEIofKChWphqZLxZ+AStqUicLg==;EndpointSuffix=core.windows.net";
+        //private static readonly string containerName = "aspl1710";
+        private static readonly string containerName = "rentreport";
 
 
         [FunctionName("FileUploader")]
