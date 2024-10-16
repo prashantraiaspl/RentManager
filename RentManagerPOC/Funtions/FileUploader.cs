@@ -17,13 +17,13 @@ namespace RentManagerPOC.Funtions
     public static class FileUploader
     {
         private static readonly string BaseUrl = Environment.GetEnvironmentVariable("RentManagerBaseURL") ?? throw new InvalidOperationException("Base URL not configured.");
-        private static readonly string ConnectionString = Environment.GetEnvironmentVariable("AsplStorageConnectionString") ?? throw new InvalidOperationException("Storage connection string not configured.");
-        private static readonly string ContainerName = Environment.GetEnvironmentVariable("AsplContainerName") ?? throw new InvalidOperationException("Container name not configured.");
+        private static readonly string ConnectionString = Environment.GetEnvironmentVariable("ClientStorageConnectionString") ?? throw new InvalidOperationException("Storage connection string not configured.");
+        private static readonly string ContainerName = Environment.GetEnvironmentVariable("ClientContainerName") ?? throw new InvalidOperationException("Container name not configured.");
 
 
         [FunctionName("FileUploader")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "FileUploader/{reportId}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "FileUploader/{ReportId}")] HttpRequest req,
             ILogger log,
             int ReportId)
         {

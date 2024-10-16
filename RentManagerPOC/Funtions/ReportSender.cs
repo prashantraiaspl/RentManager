@@ -8,7 +8,7 @@ namespace RentManagerPOC.Functions
 {
     public class ReportSender
     {
-        private static readonly string API_BASEURL = Environment.GetEnvironmentVariable("AsplFileUploaderApiURL");
+        private static readonly string API_BASEURL = Environment.GetEnvironmentVariable("ClientFileUploaderApiURL");
         private static readonly string CRON_TIME = Environment.GetEnvironmentVariable("TEST_CRON_CANADIAN_CENTRAL_TIMEZONE") ?? "0 */30 * * * *";
 
         // Define an array of report IDs
@@ -61,7 +61,7 @@ namespace RentManagerPOC.Functions
         private string GetApiKey()
         {
             // Consider storing sensitive data securely
-            return Environment.GetEnvironmentVariable("AsplDefaultApiKey");
+            return Environment.GetEnvironmentVariable("ClientDefaultApiKey");
         }
 
 
