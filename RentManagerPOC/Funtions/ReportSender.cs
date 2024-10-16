@@ -23,7 +23,7 @@ namespace RentManagerPOC.Functions
         };
 
         [FunctionName("ReportSender")]
-        public async Task Run([TimerTrigger("*/2 * * * *")] TimerInfo myTimer, ILogger log)
+        public async Task Run([TimerTrigger("*/120 * * * * *")] TimerInfo myTimer, ILogger log)
         {
             // Get current UTC time
             var utcNow = DateTime.UtcNow;
