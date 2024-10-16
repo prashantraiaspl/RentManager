@@ -15,7 +15,11 @@ namespace RentManagerPOC.Funtions
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            string connectionString = Environment.GetEnvironmentVariable("AsplStorageConnectionString");
+            string containerName = Environment.GetEnvironmentVariable("AsplContainerName");
+
+            log.LogInformation($"Using connectionString: {connectionString}");
+            log.LogInformation($"Using container: {containerName}");
 
             var responseMessage = new
             {

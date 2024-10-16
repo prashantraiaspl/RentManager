@@ -16,34 +16,37 @@ namespace RentManagerPOC.Funtions
 {
     public static class FileUploader
     {
-        private static readonly string BaseUrl = "https://goosepm.api.rentmanager.com";
-
-        // Azure Blob Storage connection string and container name
-        //private static readonly string connectionString = "DefaultEndpointsProtocol=https;AccountName=aspl1710;AccountKey=VjyEEoO4A+ADkyo4F1S6D6BFL++jxubiK9rbcuSJBt2p46bfjC4j4i5y4cMgB2cswM9TGHWr1Zit+AStKEBrRA==;EndpointSuffix=core.windows.net";
-        private static readonly string connectionString = "DefaultEndpointsProtocol=https;AccountName=storageboxx;AccountKey=MWzA576uY6wgCbISNib+ppVWXA9ur5KJTWUJ2q8qHINdb6B2gbwgj0BmxGI+DEIofKChWphqZLxZ+AStqUicLg==;EndpointSuffix=core.windows.net";
-        //private static readonly string containerName = "aspl1710";
-        private static readonly string containerName = "rentreport";
+        private static readonly string BaseUrl = Environment.GetEnvironmentVariable("RentManagerBaseURL") ?? throw new InvalidOperationException("Base URL not configured.");
+        private static readonly string ConnectionString = Environment.GetEnvironmentVariable("AsplStorageConnectionString") ?? throw new InvalidOperationException("Storage connection string not configured.");
+        private static readonly string ContainerName = Environment.GetEnvironmentVariable("AsplContainerName") ?? throw new InvalidOperationException("Container name not configured.");
 
 
         [FunctionName("FileUploader")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "FileUploader/{reportId}")] HttpRequest req,
-            ILogger _logger,
-            int reportId)
+            ILogger log,
+            int ReportId)
         {
-            if (reportId <= 0)
+
+            if (ReportId <= 0)
             {
+                log.LogWarning("Invalid ReportId received: {ReportId}", ReportId);
                 return new BadRequestObjectResult("Invalid ReportId.");
             }
 
-            _logger.LogInformation("Process Started.");
+            log.LogInformation("-------------Process Started.--------------");
 
-            // Create a BlobContainerClient
-            var blobServiceClient = new BlobServiceClient(connectionString);
-            var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
-            await blobContainerClient.CreateIfNotExistsAsync();
+            BlobContainerClient blobContainerClient;
 
-            _logger.LogInformation($"Blob container '{containerName}' Found or Created Successfully.");
+            try
+            {
+                blobContainerClient = await CreateBlobContainerClient(log);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"Failed to create blob container client: {ex.Message}");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
 
             try
             {
@@ -54,44 +57,51 @@ namespace RentManagerPOC.Funtions
                     client.Timeout = TimeSpan.FromMinutes(30);
 
                     // Get authentication token
-                    string authToken = await GetAuthToken(client, _logger);
+                    string authToken = await GetAuthToken(client, log);
 
                     if (string.IsNullOrEmpty(authToken))
                     {
-                        _logger.LogError("Retrying to Generate Auth Token.");
+                        log.LogError("Retrying to Generate Auth Token.");
+                        authToken = await GetAuthToken(client, log);
 
-                        authToken = await GetAuthToken(client, _logger);
+                        if (string.IsNullOrEmpty(authToken))
+                        {
+                            log.LogError("Failed to generate Auth Token.");
+                            return new BadRequestObjectResult("Failed to generate Auth Token.");
+                        }
+
+                        log.LogError($"Token Generated: {authToken}.");
                     }
 
+
                     // Get the CSV file download URL
-                    string downloadUrl = await GetCsvDownloadUrl(client, reportId, authToken, _logger);
+                    string downloadUrl = await GetCsvDownloadUrl(client, ReportId, authToken, log);
 
                     if (string.IsNullOrEmpty(downloadUrl))
                     {
-                        _logger.LogError($"Failed to retrieve CSV File Download URL for ReportId {reportId}.");
-                        return new BadRequestObjectResult(new { Status = false, Message = $"CSV download URL for ReportId {reportId} not found." });
+                        log.LogError($"Failed to retrieve CSV File Download URL for ReportId {ReportId}.");
+                        return new BadRequestObjectResult(new { Status = false, Message = $"CSV download URL for ReportId {ReportId} Not Found." });
                     }
 
 
                     // Download the CSV file content
-                    byte[] fileContent = await DownloadCsvFile(client, downloadUrl, reportId, _logger);
+                    byte[] fileContent = await DownloadCsvFile(client, downloadUrl, ReportId, log);
 
                     if (fileContent == null)
                     {
-                        _logger.LogError($"Failed to download the CSV file for ReportId {reportId}.");
-                        return new BadRequestObjectResult(new { Status = false, Message = $"Failed to download the CSV file for ReportId {reportId}." });
+                        log.LogError($"Failed to download the CSV file for ReportId {ReportId}.");
+                        return new BadRequestObjectResult(new { Status = false, Message = $"Failed to download the CSV file for ReportId {ReportId}." });
                     }
 
 
                     // Upload the CSV file to Azure Blob Storage
-                    await UploadToBlobStorage(blobContainerClient, reportId, fileContent, _logger);
-
-                    _logger.LogInformation($"Report uploaded to Blob Storage: {reportId}.csv");
+                    await UploadToBlobStorage(blobContainerClient, ReportId, fileContent, log);
+                    log.LogInformation($"Report Uploaded to Blob Storage: '{ReportId}'");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"File Download Failed for ReportId {reportId}: {ex.Message}");
+                log.LogError($"File Download Failed for ReportId {ReportId}: {ex.Message}");
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
 
@@ -100,7 +110,7 @@ namespace RentManagerPOC.Funtions
 
 
         // ----------------HELPER METHODS-------------------
-        public static async Task<string> GetAuthToken(HttpClient client, ILogger _logger)
+        public static async Task<string> GetAuthToken(HttpClient client, ILogger log)
         {
             try
             {
@@ -109,7 +119,7 @@ namespace RentManagerPOC.Funtions
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"Failed to retrieve authentication token. Message: {response.ReasonPhrase}");
+                    log.LogError($"Failed to retrieve authentication token. Message: {response.ReasonPhrase}");
                     return null;
                 }
 
@@ -117,12 +127,13 @@ namespace RentManagerPOC.Funtions
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error getting auth token: {ex.Message}");
+                log.LogError($"Error getting auth token: {ex.Message}");
                 return null;
             }
         }
 
-        private static async Task<string> GetCsvDownloadUrl(HttpClient client, int reportId, string authToken, ILogger _logger)
+
+        private static async Task<string> GetCsvDownloadUrl(HttpClient client, int reportId, string authToken, ILogger log)
         {
             var requestUrl = $"{BaseUrl}/ReportWriterReports/{reportId}/RunReportWriterReport?GetOptions=ReturnCSVUrl";
 
@@ -133,7 +144,7 @@ namespace RentManagerPOC.Funtions
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"Failed to get CSV download URL for ReportId {reportId}. Message: {response.ReasonPhrase}");
+                    log.LogError($"Failed to get CSV download URL for ReportId {reportId}. Message: {response.ReasonPhrase}");
                     return null;
                 }
 
@@ -143,13 +154,13 @@ namespace RentManagerPOC.Funtions
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error getting CSV download URL: {ex.Message}");
+                log.LogError($"Error getting CSV download URL: {ex.Message}");
                 return null;
             }
         }
 
 
-        private static async Task<byte[]> DownloadCsvFile(HttpClient client, string downloadUrl, int reportId, ILogger _logger)
+        private static async Task<byte[]> DownloadCsvFile(HttpClient client, string downloadUrl, int reportId, ILogger log)
         {
             try
             {
@@ -157,7 +168,7 @@ namespace RentManagerPOC.Funtions
 
                 if (!downloadResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"Failed to download CSV file for ReportId {reportId}. Message: {downloadResponse.ReasonPhrase}");
+                    log.LogError($"Failed to download CSV file for ReportId {reportId}. Message: {downloadResponse.ReasonPhrase}");
                     return null;
                 }
 
@@ -165,7 +176,7 @@ namespace RentManagerPOC.Funtions
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error downloading CSV file for ReportId {reportId}: {ex.Message}");
+                log.LogError($"Error downloading CSV file for ReportId {reportId}: {ex.Message}");
                 return null;
             }
         }
@@ -181,15 +192,14 @@ namespace RentManagerPOC.Funtions
             { 66, "Department Rep Report" }
         };
 
-        private static async Task UploadToBlobStorage(BlobContainerClient blobContainerClient, int reportId, byte[] fileContent, ILogger _logger)
+
+        private static async Task UploadToBlobStorage(BlobContainerClient blobContainerClient, int reportId, byte[] fileContent, ILogger log)
         {
             try
             {
-                // Check if the reportId exists in the dictionary and get the corresponding folder name
                 if (ReportIdToFolderName.TryGetValue(reportId, out string folderName))
                 {
-                    // Use the folder name in the blob path
-                    string blobName = $"{folderName}/{reportId}.csv";
+                    string blobName = $"{folderName}/{folderName}.csv";
                     BlobClient blobClient = blobContainerClient.GetBlobClient(blobName);
 
                     using (var stream = new MemoryStream(fileContent))
@@ -197,13 +207,12 @@ namespace RentManagerPOC.Funtions
                         await blobClient.UploadAsync(stream, overwrite: true);
                     }
 
-                    _logger.LogInformation($"Successfully uploaded ReportId {reportId} to folder '{folderName}' in Blob Storage.");
+                    log.LogInformation($"Successfully uploaded ReportId {reportId} to folder '{folderName}' in Blob Storage.");
                 }
                 else
                 {
-                    _logger.LogWarning($"No folder name mapped for ReportId {reportId}. Uploading to default 'Reports' folder.");
+                    log.LogWarning($"No folder name mapped for ReportId {reportId}. Uploading to default 'Reports' folder.");
 
-                    // Default to Reports folder if no mapping exists
                     string blobName = $"Reports/{reportId}.csv";
                     BlobClient blobClient = blobContainerClient.GetBlobClient(blobName);
 
@@ -215,7 +224,26 @@ namespace RentManagerPOC.Funtions
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error uploading file to Blob Storage for ReportId {reportId}: {ex.Message}");
+                log.LogError($"Error uploading file to Blob Storage for ReportId {reportId}: {ex.Message}");
+            }
+        }
+
+
+        private static async Task<BlobContainerClient> CreateBlobContainerClient(ILogger log)
+        {
+            try
+            {
+                var blobServiceClient = new BlobServiceClient(ConnectionString);
+                var blobContainerClient = blobServiceClient.GetBlobContainerClient(ContainerName);
+                await blobContainerClient.CreateIfNotExistsAsync();
+
+                log.LogInformation($"Blob container '{ContainerName}' found or created successfully.");
+                return blobContainerClient;
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"Error creating or accessing blob container '{ContainerName}': {ex.Message}");
+                throw; // Rethrow the exception to allow the caller to handle it
             }
         }
     }

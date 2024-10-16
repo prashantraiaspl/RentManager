@@ -1,13 +1,10 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Azure;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -15,14 +12,14 @@ namespace RentManagerPOC.Funtions
 {
     public static class GetCsvReport
     {
-        private static readonly string BaseUrl = "https://goosepm.api.rentmanager.com";
+        private static readonly string BaseUrl = Environment.GetEnvironmentVariable("RentManagerBaseURL");
         private static readonly HttpClient client = new HttpClient();
 
         static GetCsvReport()
         {
             client.BaseAddress = new Uri(BaseUrl);
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.Timeout = TimeSpan.FromMinutes(10);
+            client.Timeout = TimeSpan.FromMinutes(30);
         }
 
         [FunctionName("GetCsvReport")]

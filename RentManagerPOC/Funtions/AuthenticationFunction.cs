@@ -15,7 +15,7 @@ namespace RentManagerPOC.Funtions
 {
     public static class AuthenticationFunction
     {
-        private static readonly string RentManagerBaseUrl = "https://goosepm.api.rentmanager.com/";
+        private static readonly string RentManagerBaseUrl = Environment.GetEnvironmentVariable("RentManagerBaseURL");
         private static readonly HttpClient client = new HttpClient();
 
         static AuthenticationFunction()
@@ -30,7 +30,7 @@ namespace RentManagerPOC.Funtions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ILogger _logger)
         {
-            _logger.LogInformation("Processing authentication request.");
+            _logger.LogInformation("Processing Authentication Request.");
 
             // Read request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -40,7 +40,7 @@ namespace RentManagerPOC.Funtions
             // Validate the request data
             if (authModel == null || string.IsNullOrEmpty(authModel.username) || string.IsNullOrEmpty(authModel.password))
             {
-                return new BadRequestObjectResult("Invalid request. Please provide valid username, password, and location ID.");
+                return new BadRequestObjectResult("Invalid Request. Please provide valid username, password, and location ID.");
             }
 
 

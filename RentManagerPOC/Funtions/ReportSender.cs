@@ -8,6 +8,9 @@ namespace RentManagerPOC.Functions
 {
     public class ReportSender
     {
+        private static readonly string API_BASEURL = Environment.GetEnvironmentVariable("AsplFileUploaderApiURL");
+        private static readonly string CRON_TIME = Environment.GetEnvironmentVariable("TEST_CRON_CANADIAN_CENTRAL_TIMEZONE") ?? "0 */30 * * * *";
+
         // Define an array of report IDs
         private readonly int[] reportIds = new int[]
         {
@@ -20,45 +23,66 @@ namespace RentManagerPOC.Functions
         };
 
         [FunctionName("ReportSender")]
-        //public async Task Run([TimerTrigger("0 0 5,11,13,15,17 * * *")] TimerInfo myTimer, ILogger _logger)
-        public async Task Run([TimerTrigger("38 9 * * *")] TimerInfo myTimer, ILogger _logger)
+        public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer, ILogger log)
         {
-            _logger.LogInformation($"ReportSender function triggered at: {DateTime.Now}");
+            log.LogInformation("ReportSender function triggered at: {Time}", DateTime.UtcNow);
 
-            foreach (var reportId in reportIds)
+            using (HttpClient client = new HttpClient())
             {
-                // Create a new HttpClient instance for each request
-                using (HttpClient client = new HttpClient())
+                // Set the timeout to 30 minutes for the HTTP client
+                client.Timeout = TimeSpan.FromMinutes(30);
+
+                foreach (var reportId in reportIds)
                 {
-                    // Set the timeout to 30 minutes
-                    client.Timeout = TimeSpan.FromMinutes(30);
+                    var apiUrl = BuildApiUrl(reportId);
+                    await ProcessReportAsync(client, reportId, apiUrl, log);
 
-                    // Construct the API URL with the dynamic reportId
-                    var apiUrl = $"https://rentmanagerpoc.azurewebsites.net/api/FileUploader/{reportId}?code=sP8hmtu7q3t2z7DOnSx2Uk1m4Eb3hcn8N9yhcsHvEAFDAzFuf8tuvQ==";
-
-                    try
-                    {
-                        _logger.LogInformation($"Processing Report ID: {reportId}");
-
-                        // Make the HTTP GET request
-                        HttpResponseMessage response = await client.GetAsync(apiUrl);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            _logger.LogInformation($"Report '{reportId}.csv' Processed Successfully.");
-                        }
-                        else
-                        {
-                            _logger.LogError($"Failed to process Report ID {reportId}. Status Code: {response.ReasonPhrase}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError($"Error while sending request for Report ID {reportId}: {ex.Message}");
-                    }
-
-                    // Delay between each request (e.g., 30 seconds between requests)
+                    // Delay between each request (e.g., 30 seconds)
                     await Task.Delay(TimeSpan.FromSeconds(30));
                 }
+            }
+        }
+
+
+        // ----------------HELPER METHODS-------------------
+        private string BuildApiUrl(int reportId)
+        {
+            return $"{API_BASEURL}/{reportId}?code={GetApiKey()}";
+        }
+
+
+        private string GetApiKey()
+        {
+            // Consider storing sensitive data securely
+            return Environment.GetEnvironmentVariable("AsplDefaultApiKey");
+        }
+
+
+        private async Task ProcessReportAsync(HttpClient client, int reportId, string apiUrl, ILogger log)
+        {
+            log.LogInformation("Processing Report ID: {ReportId}", reportId);
+
+            try
+            {
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    log.LogInformation("Report '{ReportId}.csv' processed successfully.", reportId);
+                }
+                else
+                {
+                    log.LogError("Failed to process Report ID {ReportId}. Status Code: {StatusCode}, Reason: {ReasonPhrase}",
+                        reportId, response.StatusCode, response.ReasonPhrase);
+                }
+            }
+            catch (HttpRequestException httpEx)
+            {
+                log.LogError("HTTP request error while processing Report ID {ReportId}: {Message}", reportId, httpEx.Message);
+            }
+            catch (Exception ex)
+            {
+                log.LogError("An error occurred while processing Report ID {ReportId}: {Message}", reportId, ex.Message);
             }
         }
     }
