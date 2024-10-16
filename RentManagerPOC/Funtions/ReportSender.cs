@@ -23,9 +23,16 @@ namespace RentManagerPOC.Functions
         };
 
         [FunctionName("ReportSender")]
-        public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer, ILogger log)
+        public async Task Run([TimerTrigger("%TEST_CRON_CANADIAN_CENTRAL_TIMEZONE%")] TimerInfo myTimer, ILogger log)
         {
-            log.LogInformation("ReportSender function triggered at: {Time}", DateTime.UtcNow);
+            // Get current UTC time
+            var utcNow = DateTime.UtcNow;
+
+            // Convert to IST
+            var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
+
+
+            log.LogInformation("ReportSender function triggered at: {Time}", istNow);
 
             using (HttpClient client = new HttpClient())
             {

@@ -10,7 +10,14 @@ namespace RentManagerPOC.Funtions
         [FunctionName("TimerTest")]
         public void Run([TimerTrigger("*/5 * * * * *")]TimerInfo myTimer, ILogger log)
         {
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            // Get current UTC time
+            var utcNow = DateTime.UtcNow;
+
+            // Convert to IST
+            var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
+
+
+            log.LogInformation($"C# Timer trigger function executed at: {istNow}");
         }
     }
 }
