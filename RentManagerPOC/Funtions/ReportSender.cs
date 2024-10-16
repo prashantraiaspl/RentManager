@@ -32,7 +32,7 @@ namespace RentManagerPOC.Functions
             var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
 
 
-            log.LogInformation("ReportSender function triggered at: {Time}", istNow);
+            log.LogInformation("ReportSender function triggered at: {Time}", DateTime.UtcNow);
 
             using (HttpClient client = new HttpClient())
             {

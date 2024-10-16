@@ -17,7 +17,7 @@ namespace RentManagerPOC.Funtions
             var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
 
 
-            log.LogInformation($"C# Timer trigger function executed at: {istNow}");
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.UtcNow}");
         }
     }
 }
