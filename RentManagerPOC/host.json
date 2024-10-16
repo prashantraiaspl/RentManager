@@ -12,7 +12,7 @@
   "functionTimeout": "00:30:00",
   "extensions": {
     "timers": {
-      "timeZone": "Asia/Kolkata" // Set to UTC for GMT
+      "timeZone": "UTC" // Set to UTC for GMT
     }
   }
 }
