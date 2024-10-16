@@ -9,10 +9,10 @@
       "enableLiveMetricsFilters": true
     }
   },
-  "functionTimeout": "00:30:00",
+  "functionTimeout": "00:05:00",
   "extensions": {
     "timers": {
-      "timeZone": "UTC" // Set to UTC for GMT
+      "timeZone": "Asia/Kolkata" // Set to UTC for GMT
     }
   }
 }
