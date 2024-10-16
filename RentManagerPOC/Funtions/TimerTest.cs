@@ -8,7 +8,7 @@ namespace RentManagerPOC.Funtions
     public class TimerTest
     {
         [FunctionName("TimerTest")]
-        public void Run([TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, ILogger log)
+        public void Run([TimerTrigger("*/5 * * * * *")]TimerInfo myTimer, ILogger log)
         {
             // Get current UTC time
             var utcNow = DateTime.UtcNow;
@@ -17,7 +17,7 @@ namespace RentManagerPOC.Funtions
             var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
 
 
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.UtcNow}");
+            log.LogInformation($"C# Timer trigger function executed at: {utcNow}");
         }
     }
 }

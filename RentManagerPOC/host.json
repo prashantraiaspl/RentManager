@@ -1,18 +1,12 @@
 {
-  "version": "2.0",
-  "logging": {
-    "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": true,
-        "excludedTypes": "Request"
-      },
-      "enableLiveMetricsFilters": true
+    "version": "2.0",
+    "logging": {
+        "applicationInsights": {
+            "samplingSettings": {
+                "isEnabled": true,
+                "excludedTypes": "Request"
+            },
+            "enableLiveMetricsFilters": true
+        }
     }
-  },
-  "functionTimeout": "00:10:00",
-  "extensions": {
-    "timers": {
-      "timeZone": "UTC" // Set to UTC for GMT
-    }
-  }
 }
