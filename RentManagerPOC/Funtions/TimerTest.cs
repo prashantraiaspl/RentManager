@@ -14,10 +14,10 @@ namespace RentManagerPOC.Funtions
             var utcNow = DateTime.UtcNow;
 
             // Convert to IST
-            var istNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"));
+            var NewYork_Now = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("America/New_York"));
 
 
-            log.LogInformation($"C# Timer trigger function executed at: {utcNow}");
+            log.LogInformation($"C# Timer trigger function executed at: {NewYork_Now}");
         }
     }
 }
