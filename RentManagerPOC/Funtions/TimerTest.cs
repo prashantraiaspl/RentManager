@@ -8,7 +8,7 @@ namespace RentManagerPOC.Funtions
     public class TimerTest
     {
         [FunctionName("TimerTest")]
-        public void Run([TimerTrigger("*/5 * * * * *")]TimerInfo myTimer, ILogger log)
+        public void Run([TimerTrigger("0 */11 * * * *")]TimerInfo myTimer, ILogger log)
         {
             // Get current UTC time
             var utcNow = DateTime.UtcNow;
